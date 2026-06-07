@@ -101,8 +101,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Register service worker
     registerServiceWorker();
 
-    // 5. Navigate to the stored last section (or dashboard)
-    const lastSection = localStorage.getItem('mbbs_last_section') || 'dashboard';
+    // 5. Navigate to hash route, stored last section, or dashboard
+    const hashSection = location.hash.replace(/^#/, '');
+    const lastSection = (hashSection && SECTION_TITLES[hashSection])
+      ? hashSection
+      : (localStorage.getItem('mbbs_last_section') || 'dashboard');
     navigateTo(lastSection, false);
 
   } catch (err) {
@@ -694,7 +697,7 @@ async function saveTopic() {
 
   try {
     await DB.addTopic({
-      subjectId,
+      subjectId: Number(subjectId),
       name,
       subtopics,
       done:      false,
@@ -753,7 +756,8 @@ async function saveManualSession() {
     return;
   }
 
-  const startTime = new Date(dateStr).getTime();
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const startTime = new Date(y, m - 1, d).getTime();
   const subjects  = await DB.getAllSubjects();
   const subject   = subjects.find(s => String(s.id) === String(subjectId));
 
@@ -1078,18 +1082,20 @@ function renderStreakWidget(streak) {
   const weekEl = $('streak-week');
   if (weekEl) {
     weekEl.innerHTML = '';
-    const days = ['S','M','T','W','T','F','S'];
+    const dayLabels = ['S','M','T','W','T','F','S'];
     streak.last7.forEach((studied, i) => {
+      const dayDate = new Date();
+      dayDate.setDate(dayDate.getDate() - (6 - i));
       const isToday = i === 6;
       const div = document.createElement('div');
       div.className = 'streak-day' +
         (studied ? ' streak-day--studied' : '') +
         (isToday ? ' streak-day--today' : '');
       div.setAttribute('role', 'listitem');
-      div.setAttribute('aria-label', `${days[i]}: ${studied ? 'studied' : 'no study'}`);
+      div.setAttribute('aria-label', `${dayLabels[dayDate.getDay()]}: ${studied ? 'studied' : 'no study'}`);
       div.innerHTML = `
         <div class="streak-day__dot"></div>
-        <span class="streak-day__label">${days[i]}</span>
+        <span class="streak-day__label">${dayLabels[dayDate.getDay()]}</span>
       `;
       weekEl.appendChild(div);
     });
@@ -1173,11 +1179,13 @@ async function refreshSessionsSection() {
     sessions = sessions.filter(s => String(s.subjectId) === subjectId);
   }
   if (dateFrom) {
-    const from = new Date(dateFrom).getTime();
+    const [fy, fm, fd] = dateFrom.split('-').map(Number);
+    const from = new Date(fy, fm - 1, fd).getTime();
     sessions = sessions.filter(s => s.startTime >= from);
   }
   if (dateTo) {
-    const to = new Date(dateTo).getTime() + 86400000; // end of day
+    const [ty, tm, td] = dateTo.split('-').map(Number);
+    const to = new Date(ty, tm - 1, td, 23, 59, 59, 999).getTime();
     sessions = sessions.filter(s => s.startTime <= to);
   }
 
@@ -1469,6 +1477,7 @@ async function refreshTimerSection() {
   await populateAllSubjectSelects();
 
   if (typeof TimerModule !== 'undefined') {
+    TimerModule.init();
     await TimerModule.refreshDailyStats();
     await TimerModule.renderSubjectDonut('chart-subject-donut', 'subject-legend');
   }

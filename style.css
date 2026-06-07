@@ -217,10 +217,15 @@ ul, ol { list-style: none; }
 }
 
 .sidebar__brand-icon {
-  font-size: 1.6rem;
-  color: var(--accent);
-  line-height: 1;
-  filter: drop-shadow(0 0 8px var(--accent));
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
+.app-logo {
+  filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 
 .sidebar__brand-title {
@@ -1764,10 +1769,11 @@ ul, ol { list-style: none; }
 }
 
 .about-logo {
-  font-size: 2.5rem;
-  color: var(--accent);
-  filter: drop-shadow(0 0 10px var(--accent));
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
+  border-radius: var(--radius-md);
+  object-fit: contain;
 }
 
 .about-name {
@@ -2231,7 +2237,13 @@ ul, ol { list-style: none; }
   animation: slideDown var(--dur-slow) var(--ease-out);
 }
 
-.install-banner__icon { font-size: 1.2rem; flex-shrink: 0; }
+.install-banner__icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
 .install-banner__text { flex: 1; }
 
 /* ────────────────────────────────────────────────────────────

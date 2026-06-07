@@ -239,7 +239,7 @@ function classifyUrgency(targetMs) {
  * @returns {string}
  */
 function motivationalMessage(days) {
-  if (days <= 0)  return 'Exam day — good luck! You've got this.';
+  if (days <= 0)  return "Exam day — good luck! You've got this.";
   if (days === 1) return 'Exam tomorrow — final review time!';
   if (days <= 3)  return 'Almost there — stay focused and trust your preparation.';
   if (days <= 7)  return 'One week left — high-yield topics first.';

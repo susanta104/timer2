@@ -38,23 +38,6 @@
     }
   ],
 
-  "screenshots": [
-    {
-      "src": "icons/screenshot-mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Dashboard on mobile"
-    },
-    {
-      "src": "icons/screenshot-desktop.png",
-      "sizes": "1280x800",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard on desktop"
-    }
-  ],
-
   "shortcuts": [
     {
       "name": "Start Timer",

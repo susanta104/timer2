@@ -284,13 +284,26 @@ function deleteSession(id) {
  * @param {Object} patch
  * @returns {Promise<void>}
  */
-async function updateSession(id, patch) {
-  const transaction = tx(STORE_SESSIONS, 'readwrite');
-  const store       = transaction.objectStore(STORE_SESSIONS);
-  const existing    = await promisify(store.get(id));
-  if (!existing) throw new Error(`[DB] Session ${id} not found`);
-  store.put({ ...existing, ...patch, id });
-  return txComplete(transaction);
+function updateSession(id, patch) {
+  return new Promise((resolve, reject) => {
+    const transaction = tx(STORE_SESSIONS, 'readwrite');
+    const store       = transaction.objectStore(STORE_SESSIONS);
+    const req         = store.get(id);
+
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (!existing) {
+        reject(new Error(`[DB] Session ${id} not found`));
+        return;
+      }
+      store.put({ ...existing, ...patch, id });
+    };
+    req.onerror = (e) => reject(e.target.error);
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror    = (e) => reject(e.target.error);
+    transaction.onabort    = (e) => reject(e.target.error);
+  });
 }
 
 /**
@@ -350,13 +363,26 @@ function getSubject(id) {
  * @param {Object} patch
  * @returns {Promise<void>}
  */
-async function updateSubject(id, patch) {
-  const transaction = tx(STORE_SUBJECTS, 'readwrite');
-  const store       = transaction.objectStore(STORE_SUBJECTS);
-  const existing    = await promisify(store.get(id));
-  if (!existing) throw new Error(`[DB] Subject ${id} not found`);
-  store.put({ ...existing, ...patch, id });
-  return txComplete(transaction);
+function updateSubject(id, patch) {
+  return new Promise((resolve, reject) => {
+    const transaction = tx(STORE_SUBJECTS, 'readwrite');
+    const store       = transaction.objectStore(STORE_SUBJECTS);
+    const req         = store.get(id);
+
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (!existing) {
+        reject(new Error(`[DB] Subject ${id} not found`));
+        return;
+      }
+      store.put({ ...existing, ...patch, id });
+    };
+    req.onerror = (e) => reject(e.target.error);
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror    = (e) => reject(e.target.error);
+    transaction.onabort    = (e) => reject(e.target.error);
+  });
 }
 
 /**
@@ -448,14 +474,11 @@ function addTopic(topic) {
  * @returns {Promise<Object[]>}
  */
 async function getTopicsBySubject(subjectId) {
-  const transaction = tx(STORE_TOPICS, 'readonly');
-  const store       = transaction.objectStore(STORE_TOPICS);
-  const index       = store.index('bySubject');
-  // IndexedDB stores keys as-added; coerce to Number for lookup
-  const results     = await cursorToArray(
-    index.openCursor(IDBKeyRange.only(Number(subjectId)))
-  );
-  return results.sort((a, b) => a.createdAt - b.createdAt);
+  const idStr = String(subjectId);
+  const all   = await getAllTopics();
+  return all
+    .filter(t => String(t.subjectId) === idStr)
+    .sort((a, b) => a.createdAt - b.createdAt);
 }
 
 /**
@@ -475,13 +498,26 @@ async function getAllTopics() {
  * @param {Object} patch
  * @returns {Promise<void>}
  */
-async function updateTopic(id, patch) {
-  const transaction = tx(STORE_TOPICS, 'readwrite');
-  const store       = transaction.objectStore(STORE_TOPICS);
-  const existing    = await promisify(store.get(id));
-  if (!existing) throw new Error(`[DB] Topic ${id} not found`);
-  store.put({ ...existing, ...patch, id });
-  return txComplete(transaction);
+function updateTopic(id, patch) {
+  return new Promise((resolve, reject) => {
+    const transaction = tx(STORE_TOPICS, 'readwrite');
+    const store       = transaction.objectStore(STORE_TOPICS);
+    const req         = store.get(id);
+
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (!existing) {
+        reject(new Error(`[DB] Topic ${id} not found`));
+        return;
+      }
+      store.put({ ...existing, ...patch, id });
+    };
+    req.onerror = (e) => reject(e.target.error);
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror    = (e) => reject(e.target.error);
+    transaction.onabort    = (e) => reject(e.target.error);
+  });
 }
 
 /**
