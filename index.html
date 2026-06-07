@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="MBBS Study Command Center — Track sessions, subjects, streaks, and exam countdowns." />
+  <meta name="theme-color" content="#0a0e1a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MBBS CMD" />
+
+  <title>MBBS Study Command Center</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       INSTALL BANNER (shown when PWA installable)
+  ═══════════════════════════════════════════ -->
+  <div id="install-banner" class="install-banner hidden" role="banner" aria-live="polite">
+    <span class="install-banner__icon">⚕</span>
+    <p class="install-banner__text">Install MBBS Command Center for offline access</p>
+    <button id="btn-install" class="btn btn--accent btn--sm">Install</button>
+    <button id="btn-install-dismiss" class="btn btn--ghost btn--sm" aria-label="Dismiss">✕</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       APP WRAPPER
+  ═══════════════════════════════════════════ -->
+  <div class="app-wrapper">
+
+    <!-- ─────────────────────────────────────────
+         SIDEBAR NAVIGATION (desktop)
+    ───────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+      <div class="sidebar__brand">
+        <span class="sidebar__brand-icon" aria-hidden="true">⚕</span>
+        <div class="sidebar__brand-text">
+          <span class="sidebar__brand-title">MBBS</span>
+          <span class="sidebar__brand-sub">Command Center</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <ul class="sidebar__nav-list" role="list">
+          <li>
+            <button class="nav-item active" data-section="dashboard" aria-current="page">
+              <span class="nav-item__icon" aria-hidden="true">◈</span>
+              <span class="nav-item__label">Dashboard</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-section="timer">
+              <span class="nav-item__icon" aria-hidden="true">◷</span>
+              <span class="nav-item__label">Study Timer</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-section="sessions">
+              <span class="nav-item__icon" aria-hidden="true">▤</span>
+              <span class="nav-item__label">Sessions</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-section="subjects">
+              <span class="nav-item__icon" aria-hidden="true">◑</span>
+              <span class="nav-item__label">Subjects</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-section="syllabus">
+              <span class="nav-item__icon" aria-hidden="true">◻</span>
+              <span class="nav-item__label">Syllabus</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-section="analytics">
+              <span class="nav-item__icon" aria-hidden="true">◬</span>
+              <span class="nav-item__label">Analytics</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-section="exams">
+              <span class="nav-item__icon" aria-hidden="true">◫</span>
+              <span class="nav-item__label">Exam Countdown</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-section="settings">
+              <span class="nav-item__icon" aria-hidden="true">◌</span>
+              <span class="nav-item__label">Settings</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar__footer">
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark mode">
+          <span class="theme-toggle__icon" id="theme-icon" aria-hidden="true">◑</span>
+          <span class="theme-toggle__label" id="theme-label">Light Mode</span>
+        </button>
+        <div class="sidebar__version">v1.0.0</div>
+      </div>
+    </aside>
+
+    <!-- ─────────────────────────────────────────
+         MAIN CONTENT AREA
+    ───────────────────────────────────────── -->
+    <main class="main-content" id="main-content" role="main">
+
+      <!-- PAGE HEADER (mobile + desktop) -->
+      <header class="page-header" id="page-header">
+        <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav">
+          <span class="menu-toggle__bar"></span>
+          <span class="menu-toggle__bar"></span>
+          <span class="menu-toggle__bar"></span>
+        </button>
+        <h1 class="page-header__title" id="page-title">Dashboard</h1>
+        <div class="page-header__actions">
+          <button class="icon-btn" id="header-theme-toggle" aria-label="Toggle theme">◑</button>
+          <div class="status-dot" id="online-status" title="Online"></div>
+        </div>
+      </header>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: DASHBOARD
+      ═══════════════════════════════════════ -->
+      <section class="section active" id="section-dashboard" aria-labelledby="dashboard-heading">
+        <h2 class="sr-only" id="dashboard-heading">Dashboard</h2>
+
+        <!-- Stat cards row -->
+        <div class="stat-grid" id="stat-grid">
+          <div class="stat-card stat-card--accent" id="card-today">
+            <div class="stat-card__header">
+              <span class="stat-card__label">Today</span>
+              <span class="stat-card__icon" aria-hidden="true">◷</span>
+            </div>
+            <div class="stat-card__value" id="stat-today">0h 00m</div>
+            <div class="stat-card__sub" id="stat-today-sessions">0 sessions</div>
+          </div>
+
+          <div class="stat-card" id="card-week">
+            <div class="stat-card__header">
+              <span class="stat-card__label">This Week</span>
+              <span class="stat-card__icon" aria-hidden="true">▦</span>
+            </div>
+            <div class="stat-card__value" id="stat-week">0h 00m</div>
+            <div class="stat-card__sub" id="stat-week-avg">avg 0h/day</div>
+          </div>
+
+          <div class="stat-card" id="card-month">
+            <div class="stat-card__header">
+              <span class="stat-card__label">This Month</span>
+              <span class="stat-card__icon" aria-hidden="true">◰</span>
+            </div>
+            <div class="stat-card__value" id="stat-month">0h 00m</div>
+            <div class="stat-card__sub" id="stat-month-sessions">0 sessions</div>
+          </div>
+
+          <div class="stat-card" id="card-lifetime">
+            <div class="stat-card__header">
+              <span class="stat-card__label">Lifetime</span>
+              <span class="stat-card__icon" aria-hidden="true">◈</span>
+            </div>
+            <div class="stat-card__value" id="stat-lifetime">0h 00m</div>
+            <div class="stat-card__sub" id="stat-lifetime-days">since day 1</div>
+          </div>
+        </div>
+
+        <!-- Streak + Upcoming exam -->
+        <div class="dashboard-row">
+
+          <!-- Streak card -->
+          <div class="card streak-card" id="streak-card">
+            <div class="card__header">
+              <h3 class="card__title">Study Streak</h3>
+              <span class="badge badge--fire" id="streak-badge" aria-label="Current streak">0</span>
+            </div>
+            <div class="streak-display">
+              <div class="streak-flames" id="streak-flames" aria-hidden="true"></div>
+              <div class="streak-numbers">
+                <div class="streak-stat">
+                  <span class="streak-stat__value" id="current-streak">0</span>
+                  <span class="streak-stat__label">Current</span>
+                </div>
+                <div class="streak-divider" aria-hidden="true">|</div>
+                <div class="streak-stat">
+                  <span class="streak-stat__value" id="best-streak">0</span>
+                  <span class="streak-stat__label">Best</span>
+                </div>
+              </div>
+            </div>
+            <!-- Last 7 days mini calendar -->
+            <div class="streak-week" id="streak-week" role="list" aria-label="Last 7 days activity"></div>
+          </div>
+
+          <!-- Next exam countdown -->
+          <div class="card countdown-card" id="countdown-card">
+            <div class="card__header">
+              <h3 class="card__title">Next Exam</h3>
+              <button class="icon-btn icon-btn--sm" id="btn-add-exam" aria-label="Add exam">+</button>
+            </div>
+            <div id="countdown-display">
+              <div class="countdown-empty" id="countdown-empty">
+                <span class="countdown-empty__icon" aria-hidden="true">◫</span>
+                <p>No exam scheduled</p>
+                <button class="btn btn--accent btn--sm" id="btn-add-exam-empty">Add Exam</button>
+              </div>
+              <div class="countdown-active hidden" id="countdown-active">
+                <div class="countdown-exam-name" id="countdown-exam-name">—</div>
+                <div class="countdown-timer-grid" id="countdown-timer-grid">
+                  <div class="countdown-unit">
+                    <span class="countdown-unit__value" id="cd-days">00</span>
+                    <span class="countdown-unit__label">days</span>
+                  </div>
+                  <span class="countdown-sep" aria-hidden="true">:</span>
+                  <div class="countdown-unit">
+                    <span class="countdown-unit__value" id="cd-hours">00</span>
+                    <span class="countdown-unit__label">hrs</span>
+                  </div>
+                  <span class="countdown-sep" aria-hidden="true">:</span>
+                  <div class="countdown-unit">
+                    <span class="countdown-unit__value" id="cd-mins">00</span>
+                    <span class="countdown-unit__label">min</span>
+                  </div>
+                  <span class="countdown-sep" aria-hidden="true">:</span>
+                  <div class="countdown-unit">
+                    <span class="countdown-unit__value" id="cd-secs">00</span>
+                    <span class="countdown-unit__label">sec</span>
+                  </div>
+                </div>
+                <div class="countdown-date" id="countdown-date"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Recent sessions + quick chart -->
+        <div class="dashboard-row dashboard-row--bottom">
+
+          <!-- Recent sessions -->
+          <div class="card sessions-card">
+            <div class="card__header">
+              <h3 class="card__title">Recent Sessions</h3>
+              <button class="btn btn--ghost btn--sm" data-section="sessions" id="btn-view-all-sessions">View All</button>
+            </div>
+            <div class="sessions-list" id="recent-sessions-list">
+              <div class="empty-state" id="recent-sessions-empty">
+                <span class="empty-state__icon" aria-hidden="true">▤</span>
+                <p>No sessions yet. Start the timer!</p>
+              </div>
+              <ul class="session-items" id="recent-session-items" aria-label="Recent study sessions"></ul>
+            </div>
+          </div>
+
+          <!-- Weekly chart preview -->
+          <div class="card chart-preview-card">
+            <div class="card__header">
+              <h3 class="card__title">This Week</h3>
+              <button class="btn btn--ghost btn--sm" data-section="analytics">Analytics →</button>
+            </div>
+            <div class="chart-container chart-container--sm">
+              <canvas id="chart-week-preview" role="img" aria-label="Weekly study hours chart"></canvas>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: STUDY TIMER
+      ═══════════════════════════════════════ -->
+      <section class="section hidden" id="section-timer" aria-labelledby="timer-heading">
+        <h2 class="sr-only" id="timer-heading">Study Timer</h2>
+
+        <div class="timer-layout">
+
+          <!-- Timer display -->
+          <div class="timer-display-card card">
+            <!-- Preset buttons -->
+            <div class="timer-presets" role="group" aria-label="Timer duration presets">
+              <button class="preset-btn active" data-minutes="25" aria-pressed="true">25 min</button>
+              <button class="preset-btn" data-minutes="50" aria-pressed="false">50 min</button>
+              <button class="preset-btn" data-minutes="90" aria-pressed="false">90 min</button>
+              <button class="preset-btn" data-minutes="custom" aria-pressed="false" id="preset-custom">Custom</button>
+            </div>
+
+            <!-- Custom input (hidden by default) -->
+            <div class="custom-time-input hidden" id="custom-time-input">
+              <label for="custom-minutes" class="form-label">Minutes</label>
+              <input type="number" id="custom-minutes" class="form-input form-input--sm" min="1" max="480" value="60" placeholder="60" />
+            </div>
+
+            <!-- Clock face -->
+            <div class="timer-clock" id="timer-clock" aria-live="polite" aria-atomic="true">
+              <svg class="timer-ring" viewBox="0 0 220 220" aria-hidden="true">
+                <circle class="timer-ring__bg" cx="110" cy="110" r="100" />
+                <circle class="timer-ring__progress" id="timer-ring-progress" cx="110" cy="110" r="100"
+                  stroke-dasharray="628.3"
+                  stroke-dashoffset="0"
+                  transform="rotate(-90 110 110)" />
+              </svg>
+              <div class="timer-clock__display">
+                <div class="timer-clock__time" id="timer-display">25:00</div>
+                <div class="timer-clock__phase" id="timer-phase">Focus</div>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="timer-controls" role="group" aria-label="Timer controls">
+              <button class="btn btn--ghost btn--icon" id="btn-timer-reset" aria-label="Reset timer" disabled>↺</button>
+              <button class="btn btn--accent btn--lg btn--pill" id="btn-timer-start" aria-label="Start timer">Start</button>
+              <button class="btn btn--ghost btn--icon" id="btn-timer-skip" aria-label="Skip to next phase" disabled>⇥</button>
+            </div>
+
+            <!-- Session log form (shown when timer ends) -->
+            <div class="session-log-form hidden" id="session-log-form">
+              <h3 class="session-log-form__title">Log This Session</h3>
+              <div class="form-group">
+                <label for="log-subject" class="form-label">Subject</label>
+                <select id="log-subject" class="form-select">
+                  <option value="">— Select subject —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="log-topic" class="form-label">Topic <span class="form-label--optional">(optional)</span></label>
+                <input type="text" id="log-topic" class="form-input" placeholder="e.g. Cardiac physiology" maxlength="100" />
+              </div>
+              <div class="form-group">
+                <label for="log-notes" class="form-label">Notes <span class="form-label--optional">(optional)</span></label>
+                <textarea id="log-notes" class="form-textarea" rows="2" placeholder="What did you cover?" maxlength="500"></textarea>
+              </div>
+              <div class="form-row">
+                <button class="btn btn--accent" id="btn-log-save">Save Session</button>
+                <button class="btn btn--ghost" id="btn-log-skip">Skip</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timer stats sidebar -->
+          <div class="timer-stats">
+            <div class="card timer-stats__card">
+              <h3 class="card__title">Today's Timer</h3>
+              <div class="timer-daily-stats">
+                <div class="tds-item">
+                  <span class="tds-item__value" id="tds-sessions">0</span>
+                  <span class="tds-item__label">Sessions</span>
+                </div>
+                <div class="tds-item">
+                  <span class="tds-item__value" id="tds-focus">0m</span>
+                  <span class="tds-item__label">Focus Time</span>
+                </div>
+                <div class="tds-item">
+                  <span class="tds-item__value" id="tds-breaks">0</span>
+                  <span class="tds-item__label">Breaks</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card timer-stats__card">
+              <h3 class="card__title">Subject Breakdown</h3>
+              <div class="chart-container chart-container--xs">
+                <canvas id="chart-subject-donut" role="img" aria-label="Subject time breakdown donut chart"></canvas>
+              </div>
+              <div class="subject-legend" id="subject-legend"></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: SESSIONS LOG
+      ═══════════════════════════════════════ -->
+      <section class="section hidden" id="section-sessions" aria-labelledby="sessions-heading">
+        <h2 class="sr-only" id="sessions-heading">Sessions Log</h2>
+
+        <div class="section-toolbar">
+          <div class="filter-row">
+            <select class="form-select form-select--sm" id="filter-subject" aria-label="Filter by subject">
+              <option value="">All Subjects</option>
+            </select>
+            <input type="date" class="form-input form-input--sm" id="filter-date-from" aria-label="From date" />
+            <input type="date" class="form-input form-input--sm" id="filter-date-to" aria-label="To date" />
+            <button class="btn btn--ghost btn--sm" id="btn-filter-clear">Clear</button>
+          </div>
+          <button class="btn btn--accent btn--sm" id="btn-add-session-manual">+ Manual Entry</button>
+        </div>
+
+        <div class="sessions-summary-bar" id="sessions-summary-bar">
+          <span id="sessions-count-label">0 sessions</span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span id="sessions-total-time-label">0h total</span>
+        </div>
+
+        <div class="sessions-full-list" id="sessions-full-list">
+          <div class="empty-state" id="sessions-empty">
+            <span class="empty-state__icon" aria-hidden="true">▤</span>
+            <p>No sessions logged yet.</p>
+            <button class="btn btn--accent btn--sm" data-section="timer">Start a Timer</button>
+          </div>
+          <ul class="session-items session-items--full" id="all-session-items" aria-label="All study sessions"></ul>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: SUBJECTS
+      ═══════════════════════════════════════ -->
+      <section class="section hidden" id="section-subjects" aria-labelledby="subjects-heading">
+        <h2 class="sr-only" id="subjects-heading">Subject Tracking</h2>
+
+        <div class="section-toolbar">
+          <p class="section-desc">Track time and progress per MBBS subject.</p>
+          <button class="btn btn--accent btn--sm" id="btn-add-subject">+ Add Subject</button>
+        </div>
+
+        <div class="subject-grid" id="subject-grid">
+          <div class="empty-state" id="subjects-empty">
+            <span class="empty-state__icon" aria-hidden="true">◑</span>
+            <p>No subjects added yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: SYLLABUS TRACKER
+      ═══════════════════════════════════════ -->
+      <section class="section hidden" id="section-syllabus" aria-labelledby="syllabus-heading">
+        <h2 class="sr-only" id="syllabus-heading">Syllabus Tracker</h2>
+
+        <div class="section-toolbar">
+          <select class="form-select form-select--sm" id="syllabus-subject-filter" aria-label="Select subject for syllabus">
+            <option value="">— Select Subject —</option>
+          </select>
+          <button class="btn btn--accent btn--sm" id="btn-add-topic">+ Add Topic</button>
+        </div>
+
+        <!-- Overall completion bar -->
+        <div class="completion-overview card" id="completion-overview">
+          <div class="completion-overview__header">
+            <span class="completion-overview__label" id="syllabus-subject-name">Select a subject</span>
+            <span class="completion-overview__pct" id="syllabus-pct">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="syllabus-progress-bar" style="width:0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="completion-overview__stats" id="completion-stats">
+            <span id="topics-done">0</span> of <span id="topics-total">0</span> topics completed
+          </div>
+        </div>
+
+        <div class="syllabus-list" id="syllabus-list">
+          <div class="empty-state" id="syllabus-empty">
+            <span class="empty-state__icon" aria-hidden="true">◻</span>
+            <p>Select a subject to manage topics.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: ANALYTICS
+      ═══════════════════════════════════════ -->
+      <section class="section hidden" id="section-analytics" aria-labelledby="analytics-heading">
+        <h2 class="sr-only" id="analytics-heading">Analytics</h2>
+
+        <!-- Period selector -->
+        <div class="analytics-toolbar">
+          <div class="period-tabs" role="tablist" aria-label="Analytics period">
+            <button class="period-tab active" role="tab" data-period="week" aria-selected="true">Week</button>
+            <button class="period-tab" role="tab" data-period="month" aria-selected="false">Month</button>
+            <button class="period-tab" role="tab" data-period="year" aria-selected="false">Year</button>
+            <button class="period-tab" role="tab" data-period="all" aria-selected="false">All Time</button>
+          </div>
+        </div>
+
+        <!-- Analytics grid -->
+        <div class="analytics-grid">
+
+          <div class="card analytics-card analytics-card--wide">
+            <h3 class="card__title">Study Hours</h3>
+            <div class="chart-container">
+              <canvas id="chart-hours-bar" role="img" aria-label="Study hours bar chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card analytics-card">
+            <h3 class="card__title">Subject Distribution</h3>
+            <div class="chart-container">
+              <canvas id="chart-subject-pie" role="img" aria-label="Subject distribution pie chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card analytics-card">
+            <h3 class="card__title">Sessions per Day</h3>
+            <div class="chart-container">
+              <canvas id="chart-sessions-line" role="img" aria-label="Sessions per day line chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card analytics-card analytics-card--wide">
+            <h3 class="card__title">Study Heatmap — Last 12 Weeks</h3>
+            <div class="heatmap-container" id="heatmap-container" role="img" aria-label="Study activity heatmap"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: EXAM COUNTDOWN
+      ═══════════════════════════════════════ -->
+      <section class="section hidden" id="section-exams" aria-labelledby="exams-heading">
+        <h2 class="sr-only" id="exams-heading">Exam Countdown</h2>
+
+        <div class="section-toolbar">
+          <p class="section-desc">Add upcoming exams to track time remaining.</p>
+          <button class="btn btn--accent btn--sm" id="btn-add-exam-page">+ Add Exam</button>
+        </div>
+
+        <div class="exams-grid" id="exams-grid">
+          <div class="empty-state" id="exams-empty">
+            <span class="empty-state__icon" aria-hidden="true">◫</span>
+            <p>No exams scheduled.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════
+           SECTION: SETTINGS
+      ═══════════════════════════════════════ -->
+      <section class="section hidden" id="section-settings" aria-labelledby="settings-heading">
+        <h2 class="sr-only" id="settings-heading">Settings</h2>
+
+        <div class="settings-grid">
+
+          <!-- Preferences -->
+          <div class="card settings-card">
+            <h3 class="card__title">Preferences</h3>
+            <div class="settings-list">
+
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Theme</span>
+                  <span class="setting-row__desc">Dark or light interface</span>
+                </div>
+                <div class="toggle-group" role="group">
+                  <button class="toggle-btn active" id="pref-dark" aria-pressed="true">Dark</button>
+                  <button class="toggle-btn" id="pref-light" aria-pressed="false">Light</button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Timer Sound</span>
+                  <span class="setting-row__desc">Audio alert when session ends</span>
+                </div>
+                <label class="switch" aria-label="Timer sound toggle">
+                  <input type="checkbox" id="pref-sound" checked />
+                  <span class="switch__track"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Notifications</span>
+                  <span class="setting-row__desc">Browser push notifications</span>
+                </div>
+                <label class="switch" aria-label="Notifications toggle">
+                  <input type="checkbox" id="pref-notifications" />
+                  <span class="switch__track"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Daily Goal</span>
+                  <span class="setting-row__desc">Target study hours per day</span>
+                </div>
+                <div class="input-group input-group--sm">
+                  <input type="number" id="pref-daily-goal" class="form-input form-input--sm" min="1" max="24" value="8" />
+                  <span class="input-group__addon">hrs</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Backup & restore -->
+          <div class="card settings-card">
+            <h3 class="card__title">Backup & Restore</h3>
+            <div class="settings-list">
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Export Data</span>
+                  <span class="setting-row__desc">Download all data as JSON</span>
+                </div>
+                <button class="btn btn--accent btn--sm" id="btn-export">Export</button>
+              </div>
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Import Data</span>
+                  <span class="setting-row__desc">Restore from a JSON backup</span>
+                </div>
+                <button class="btn btn--ghost btn--sm" id="btn-import-trigger">Import</button>
+                <input type="file" id="btn-import" accept=".json" class="sr-only" aria-label="Select backup file to import" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger zone -->
+          <div class="card settings-card settings-card--danger">
+            <h3 class="card__title card__title--danger">Danger Zone</h3>
+            <div class="settings-list">
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Clear All Sessions</span>
+                  <span class="setting-row__desc">Permanently delete all study logs</span>
+                </div>
+                <button class="btn btn--danger btn--sm" id="btn-clear-sessions">Clear</button>
+              </div>
+              <div class="setting-row">
+                <div class="setting-row__info">
+                  <span class="setting-row__label">Reset Everything</span>
+                  <span class="setting-row__desc">Wipe all data and start fresh</span>
+                </div>
+                <button class="btn btn--danger btn--sm" id="btn-reset-all">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- About -->
+          <div class="card settings-card">
+            <h3 class="card__title">About</h3>
+            <div class="about-block">
+              <div class="about-logo" aria-hidden="true">⚕</div>
+              <div class="about-text">
+                <p class="about-name">MBBS Study Command Center</p>
+                <p class="about-version">Version 1.0.0</p>
+                <p class="about-desc">A Progressive Web App for medical students. Track sessions, subjects, streaks, and exam countdowns — fully offline.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main><!-- /main-content -->
+
+  </div><!-- /app-wrapper -->
+
+  <!-- ═══════════════════════════════════════════
+       MOBILE BOTTOM NAV
+  ═══════════════════════════════════════════ -->
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
+    <button class="bottom-nav__item active" data-section="dashboard" aria-label="Dashboard" aria-current="page">
+      <span class="bottom-nav__icon" aria-hidden="true">◈</span>
+      <span class="bottom-nav__label">Home</span>
+    </button>
+    <button class="bottom-nav__item" data-section="timer" aria-label="Study Timer">
+      <span class="bottom-nav__icon" aria-hidden="true">◷</span>
+      <span class="bottom-nav__label">Timer</span>
+    </button>
+    <button class="bottom-nav__item" data-section="syllabus" aria-label="Syllabus">
+      <span class="bottom-nav__icon" aria-hidden="true">◻</span>
+      <span class="bottom-nav__label">Syllabus</span>
+    </button>
+    <button class="bottom-nav__item" data-section="analytics" aria-label="Analytics">
+      <span class="bottom-nav__icon" aria-hidden="true">◬</span>
+      <span class="bottom-nav__label">Analytics</span>
+    </button>
+    <button class="bottom-nav__item" data-section="settings" aria-label="Settings">
+      <span class="bottom-nav__icon" aria-hidden="true">◌</span>
+      <span class="bottom-nav__label">Settings</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════
+       MODALS
+  ═══════════════════════════════════════════ -->
+
+  <!-- Generic modal backdrop -->
+  <div class="modal-backdrop hidden" id="modal-backdrop" aria-hidden="true"></div>
+
+  <!-- Add Subject Modal -->
+  <div class="modal hidden" id="modal-subject" role="dialog" aria-modal="true" aria-labelledby="modal-subject-title">
+    <div class="modal__header">
+      <h3 class="modal__title" id="modal-subject-title">Add Subject</h3>
+      <button class="modal__close" data-close="modal-subject" aria-label="Close modal">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label for="subject-name" class="form-label">Subject Name</label>
+        <input type="text" id="subject-name" class="form-input" placeholder="e.g. Anatomy" maxlength="60" />
+      </div>
+      <div class="form-group">
+        <label for="subject-color" class="form-label">Color</label>
+        <div class="color-picker-row" id="subject-color-picker" role="group" aria-label="Choose subject color"></div>
+      </div>
+      <div class="form-group">
+        <label for="subject-target" class="form-label">Weekly Target <span class="form-label--optional">(hours)</span></label>
+        <input type="number" id="subject-target" class="form-input" min="1" max="100" placeholder="10" />
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-close="modal-subject">Cancel</button>
+      <button class="btn btn--accent" id="btn-save-subject">Save Subject</button>
+    </div>
+  </div>
+
+  <!-- Add Exam Modal -->
+  <div class="modal hidden" id="modal-exam" role="dialog" aria-modal="true" aria-labelledby="modal-exam-title">
+    <div class="modal__header">
+      <h3 class="modal__title" id="modal-exam-title">Add Exam</h3>
+      <button class="modal__close" data-close="modal-exam" aria-label="Close modal">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label for="exam-name" class="form-label">Exam Name</label>
+        <input type="text" id="exam-name" class="form-input" placeholder="e.g. Final MBBS Part I" maxlength="80" />
+      </div>
+      <div class="form-group">
+        <label for="exam-date" class="form-label">Exam Date</label>
+        <input type="datetime-local" id="exam-date" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label for="exam-subject" class="form-label">Related Subject <span class="form-label--optional">(optional)</span></label>
+        <select id="exam-subject" class="form-select">
+          <option value="">— None —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-close="modal-exam">Cancel</button>
+      <button class="btn btn--accent" id="btn-save-exam">Save Exam</button>
+    </div>
+  </div>
+
+  <!-- Add Topic Modal -->
+  <div class="modal hidden" id="modal-topic" role="dialog" aria-modal="true" aria-labelledby="modal-topic-title">
+    <div class="modal__header">
+      <h3 class="modal__title" id="modal-topic-title">Add Topic</h3>
+      <button class="modal__close" data-close="modal-topic" aria-label="Close modal">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label for="topic-name" class="form-label">Topic Name</label>
+        <input type="text" id="topic-name" class="form-input" placeholder="e.g. Brachial Plexus" maxlength="120" />
+      </div>
+      <div class="form-group">
+        <label for="topic-subtopics" class="form-label">Subtopics <span class="form-label--optional">(comma-separated)</span></label>
+        <textarea id="topic-subtopics" class="form-textarea" rows="3" placeholder="Roots, Trunks, Divisions, Cords, Branches"></textarea>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-close="modal-topic">Cancel</button>
+      <button class="btn btn--accent" id="btn-save-topic">Add Topic</button>
+    </div>
+  </div>
+
+  <!-- Manual Session Modal -->
+  <div class="modal hidden" id="modal-manual-session" role="dialog" aria-modal="true" aria-labelledby="modal-session-title">
+    <div class="modal__header">
+      <h3 class="modal__title" id="modal-session-title">Manual Session Entry</h3>
+      <button class="modal__close" data-close="modal-manual-session" aria-label="Close modal">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label for="ms-subject" class="form-label">Subject</label>
+        <select id="ms-subject" class="form-select">
+          <option value="">— Select subject —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="ms-topic" class="form-label">Topic <span class="form-label--optional">(optional)</span></label>
+        <input type="text" id="ms-topic" class="form-input" placeholder="e.g. Cardiac cycle" maxlength="100" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="ms-date" class="form-label">Date</label>
+          <input type="date" id="ms-date" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="ms-duration" class="form-label">Duration (min)</label>
+          <input type="number" id="ms-duration" class="form-input" min="1" max="999" placeholder="60" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="ms-notes" class="form-label">Notes <span class="form-label--optional">(optional)</span></label>
+        <textarea id="ms-notes" class="form-textarea" rows="2" maxlength="500"></textarea>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-close="modal-manual-session">Cancel</button>
+      <button class="btn btn--accent" id="btn-save-manual-session">Save Session</button>
+    </div>
+  </div>
+
+  <!-- Confirm Dialog -->
+  <div class="modal modal--sm hidden" id="modal-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal__header">
+      <h3 class="modal__title" id="confirm-title">Confirm Action</h3>
+    </div>
+    <div class="modal__body">
+      <p class="confirm-message" id="confirm-message">Are you sure?</p>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="btn-confirm-cancel">Cancel</button>
+      <button class="btn btn--danger" id="btn-confirm-ok">Confirm</button>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ═══════════════════════════════════════════
+       APP SCRIPTS (order matters)
+  ═══════════════════════════════════════════ -->
+  <script src="js/db.js"></script>
+  <script src="js/sessions.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/streak.js"></script>
+  <script src="js/countdown.js"></script>
+  <script src="js/syllabus.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/backup.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
