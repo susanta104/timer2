@@ -15,7 +15,7 @@
 /* ────────────────────────────────────────────────────────────
    CACHE NAMES — bump CACHE_VERSION to force full refresh
 ──────────────────────────────────────────────────────────── */
-const CACHE_VERSION   = 'v1.1.0';
+const CACHE_VERSION   = 'v1.1.2';
 const CACHE_SHELL     = `mbbs-shell-${CACHE_VERSION}`;
 const CACHE_FONTS     = `mbbs-fonts-${CACHE_VERSION}`;
 const CACHE_CDN       = `mbbs-cdn-${CACHE_VERSION}`;

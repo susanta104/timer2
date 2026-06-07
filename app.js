@@ -1062,6 +1062,7 @@ function initSectionToolbarButtons() {
 
       if (typeof ChartsModule !== 'undefined') {
         await ChartsModule.render(tab.dataset.period);
+        requestAnimationFrame(() => ChartsModule.resizeAll?.());
       }
     });
   });
@@ -1114,6 +1115,7 @@ async function refreshDashboard() {
   // Weekly preview chart
   if (typeof ChartsModule !== 'undefined') {
     await ChartsModule.renderWeekPreview('chart-week-preview');
+    requestAnimationFrame(() => ChartsModule.resizeAll?.());
   }
 }
 
@@ -1495,6 +1497,9 @@ async function refreshAnalyticsSection() {
   const activePeriod = document.querySelector('.period-tab.active')?.dataset.period || 'week';
   await ChartsModule.render(activePeriod);
   await ChartsModule.renderHeatmap('heatmap-container');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => ChartsModule.resizeAll?.());
+  });
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -1584,6 +1589,9 @@ async function refreshTimerSection() {
     TimerModule.init();
     await TimerModule.refreshDailyStats();
     await TimerModule.renderSubjectDonut('chart-subject-donut', 'subject-legend');
+    requestAnimationFrame(() => {
+      if (typeof ChartsModule !== 'undefined') ChartsModule.resizeAll?.();
+    });
   }
 }
 

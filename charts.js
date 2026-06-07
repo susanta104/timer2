@@ -685,6 +685,26 @@ function destroyAll() {
   });
 }
 
+/**
+ * Resize every live Chart.js instance (after layout / orientation changes).
+ */
+function resizeAll() {
+  Object.keys(_instances).forEach(id => {
+    try {
+      _instances[id]?.resize();
+    } catch (_) {}
+  });
+}
+
+let _resizeDebounce = null;
+function _scheduleResizeAll() {
+  clearTimeout(_resizeDebounce);
+  _resizeDebounce = setTimeout(resizeAll, 120);
+}
+
+window.addEventListener('resize', _scheduleResizeAll);
+window.addEventListener('orientationchange', _scheduleResizeAll);
+
 /* ────────────────────────────────────────────────────────────
    UTILITY
 ──────────────────────────────────────────────────────────── */
@@ -710,4 +730,5 @@ window.ChartsModule = {
   renderSubjectDonut,
   renderHeatmap,
   destroyAll,
+  resizeAll,
 };

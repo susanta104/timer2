@@ -13,6 +13,7 @@
    ─ Daily stats panel refresh (sessions, focus mins, breaks)
    ─ Subject donut chart refresh on timer section entry
    ─ Persists last-used duration to localStorage
+   ─ Screen Wake Lock keeps display on while timer is running
 
    Exposes: window.TimerModule
    Depends: window.DB, window.App, window.StatsModule,
@@ -44,6 +45,7 @@ let _startTimestamp = null;       // Date.now() when last started/resumed
 let _sessionStart   = null;       // Date.now() when the session began (first Start press)
 let _elapsedAtPause = 0;          // seconds elapsed before a pause
 let _audioCtx       = null;       // shared Web Audio context (reused across alerts)
+let _wakeLock       = null;       // Screen Wake Lock sentinel while timer runs
 
 /* ────────────────────────────────────────────────────────────
    DOM REFERENCES (resolved once on init)
@@ -184,6 +186,7 @@ function _handleStartPause() {
 
 function _handleReset() {
   _stopInterval();
+  _releaseWakeLock();
   _state          = STATE.IDLE;
   _elapsedAtPause = 0;
   _sessionStart   = null;
@@ -195,6 +198,7 @@ function _handleReset() {
   _setStartLabel('Start');
   _setControlsEnabled(false);
   _hideLogForm();
+  _restorePageTitle();
 }
 
 function _handleSkip() {
@@ -216,6 +220,7 @@ function _startTimer() {
   _setControlsEnabled(true);
   _hideLogForm();
   _setPhaseLabel('Focusing…');
+  _requestWakeLock();
 
   _runTick();
   _intervalHandle = setInterval(_runTick, 1000);
@@ -225,6 +230,7 @@ function _pauseTimer() {
   _state           = STATE.PAUSED;
   _elapsedAtPause += Math.floor((Date.now() - _startTimestamp) / 1000);
   _stopInterval();
+  _releaseWakeLock();
   _setStartLabel('Resume');
   _setPhaseLabel('Paused');
 }
@@ -234,6 +240,7 @@ function _resumeTimer() {
   _startTimestamp = Date.now();
   _setStartLabel('Pause');
   _setPhaseLabel('Focusing…');
+  _requestWakeLock();
 
   _runTick();
   _intervalHandle = setInterval(_runTick, 1000);
@@ -273,6 +280,7 @@ function _runTick() {
 function _onTimerComplete() {
   _state = STATE.DONE;
   _stopInterval();
+  _releaseWakeLock();
 
   _renderDisplay(0);
   _renderRing(0);
@@ -280,8 +288,7 @@ function _onTimerComplete() {
   _setStartLabel('Start New');
   _setControlsEnabled(true);
 
-  // Restore page title
-  document.title = 'MBBS Study Command Center';
+  _restorePageTitle();
 
   // Sound alert
   _playCompletionSound();
@@ -361,6 +368,48 @@ function _setStartLabel(text) {
 function _setControlsEnabled(enabled) {
   if (_els.btnReset) _els.btnReset.disabled = !enabled;
   if (_els.btnSkip)  _els.btnSkip.disabled  = !enabled;
+}
+
+function _restorePageTitle() {
+  if (document.title.includes('MBBS CMD')) {
+    document.title = 'MBBS Study Command Center';
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   SCREEN WAKE LOCK — keep display on while timer is running
+──────────────────────────────────────────────────────────── */
+
+/**
+ * Request a screen wake lock so the device does not sleep mid-session.
+ * Requires a secure context (HTTPS or localhost).
+ */
+async function _requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+
+  try {
+    if (_wakeLock) return;
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', () => {
+      _wakeLock = null;
+    });
+  } catch (err) {
+    console.warn('[Timer] Wake lock unavailable:', err);
+    _wakeLock = null;
+  }
+}
+
+/**
+ * Release the screen wake lock when the timer is paused, reset, or done.
+ */
+async function _releaseWakeLock() {
+  if (!_wakeLock) return;
+  try {
+    await _wakeLock.release();
+  } catch (_) {
+    // already released
+  }
+  _wakeLock = null;
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -574,11 +623,14 @@ document.addEventListener('visibilitychange', () => {
     // Record elapsed time without showing as paused to the user
     _elapsedAtPause += Math.floor((Date.now() - _startTimestamp) / 1000);
     _stopInterval();
+    // Browser releases wake lock when tab is hidden
+    _wakeLock = null;
   } else {
-    // Resume seamlessly
+    // Resume seamlessly and re-acquire wake lock
     _startTimestamp = Date.now();
     _runTick();
     _intervalHandle = setInterval(_runTick, 1000);
+    _requestWakeLock();
   }
 });
 
