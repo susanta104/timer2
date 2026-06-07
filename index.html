@@ -574,10 +574,13 @@
                   <span class="setting-row__label">Timer Sound</span>
                   <span class="setting-row__desc">Audio alert when session ends</span>
                 </div>
-                <label class="switch" aria-label="Timer sound toggle">
-                  <input type="checkbox" id="pref-sound" checked />
-                  <span class="switch__track"></span>
-                </label>
+                <div class="setting-row__controls">
+                  <button class="btn btn--ghost btn--sm" id="btn-test-sound" type="button">Test</button>
+                  <label class="switch" aria-label="Timer sound toggle">
+                    <input type="checkbox" id="pref-sound" checked />
+                    <span class="switch__track"></span>
+                  </label>
+                </div>
               </div>
 
               <div class="setting-row">
@@ -602,6 +605,22 @@
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          <!-- Install app -->
+          <div class="card settings-card install-card" id="install-card">
+            <h3 class="card__title">Install App</h3>
+            <div class="install-card__body">
+              <img class="install-card__icon app-logo" src="icons/icon-192.png" width="48" height="48" alt="" aria-hidden="true" />
+              <div class="install-card__info">
+                <p class="install-card__status" id="install-status">Install for offline access and a home-screen icon.</p>
+                <p class="install-card__note">All study data is saved on this device automatically.</p>
+                <div class="install-ios-hint hidden" id="install-ios-hint">
+                  <strong>iPhone / iPad:</strong> Tap <span class="install-ios-hint__share">Share ↑</span> in Safari, then choose <strong>Add to Home Screen</strong>.
+                </div>
+                <button class="btn btn--accent btn--sm" id="btn-install-settings">Add to Home Screen</button>
+              </div>
             </div>
           </div>
 

@@ -76,8 +76,9 @@ const $$ = (sel, ctx = document) => ctx.querySelectorAll(sel);
 ──────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // 1. Open IndexedDB
+    // 1. Open IndexedDB and seed default subjects on first launch
     await DB.open();
+    await DB.seedDefaultSubjects();
 
     // 2. Apply persisted theme before first paint
     loadTheme();
@@ -89,6 +90,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initModalSystem();
     initColorPicker();
     initInstallBanner();
+    initInstallApp();
+    initAudioUnlock();
     initOnlineStatus();
     initSettings();
     initSubjectModal();
@@ -120,9 +123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
 
-  window.addEventListener('load', async () => {
+  (async () => {
     try {
-      const reg = await navigator.serviceWorker.register('sw.js');
+      const reg = await navigator.serviceWorker.register('sw.js', { scope: './' });
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
@@ -134,7 +137,7 @@ function registerServiceWorker() {
     } catch (err) {
       console.warn('[SW] Registration failed:', err);
     }
-  });
+  })();
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -229,6 +232,7 @@ async function onSectionEnter(section) {
       break;
     case 'settings':
       syncSettingsUI();
+      syncInstallUI();
       break;
   }
 }
@@ -475,26 +479,93 @@ function initOnlineStatus() {
 /* ────────────────────────────────────────────────────────────
    PWA INSTALL BANNER
 ──────────────────────────────────────────────────────────── */
-function initInstallBanner() {
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    AppState.deferredInstall = e;
-    const banner = $('install-banner');
-    if (banner && !localStorage.getItem('mbbs_install_dismissed')) {
-      banner.classList.remove('hidden');
-    }
-  });
+function isAppInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
 
-  $('btn-install')?.addEventListener('click', async () => {
-    if (!AppState.deferredInstall) return;
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isIOSSafari() {
+  return isIOS() && !isAppInstalled() && !window.matchMedia('(display-mode: standalone)').matches;
+}
+
+async function promptInstall() {
+  if (isAppInstalled()) {
+    showToast('App is already installed.', 'info');
+    return;
+  }
+
+  if (AppState.deferredInstall) {
     AppState.deferredInstall.prompt();
     const { outcome } = await AppState.deferredInstall.userChoice;
     if (outcome === 'accepted') {
       showToast('App installed successfully!', 'success');
+      syncInstallUI();
     }
     AppState.deferredInstall = null;
     $('install-banner')?.classList.add('hidden');
+    return;
+  }
+
+  if (isIOSSafari()) {
+    showToast('Tap Share (↑) then "Add to Home Screen".', 'info', 5000);
+    $('install-ios-hint')?.classList.remove('hidden');
+    return;
+  }
+
+  showToast('Use your browser menu: Install app / Add to Home Screen.', 'info', 4500);
+}
+
+function syncInstallUI() {
+  const installed = isAppInstalled();
+  const banner    = $('install-banner');
+  const card      = $('install-card');
+  const btn       = $('btn-install-settings');
+  const status    = $('install-status');
+  const iosHint   = $('install-ios-hint');
+
+  if (installed) {
+    banner?.classList.add('hidden');
+    card?.classList.add('install-card--done');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Installed';
+    }
+    if (status) status.textContent = 'Running as an installed app.';
+    iosHint?.classList.add('hidden');
+    return;
+  }
+
+  card?.classList.remove('install-card--done');
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = AppState.deferredInstall ? 'Install Now' : 'Add to Home Screen';
+  }
+  if (status) {
+    status.textContent = AppState.deferredInstall
+      ? 'Ready to install — works fully offline.'
+      : isIOSSafari()
+        ? 'On iPhone/iPad: Share → Add to Home Screen.'
+        : 'Install for offline access and a home-screen icon.';
+  }
+  if (isIOSSafari()) iosHint?.classList.remove('hidden');
+}
+
+function initInstallBanner() {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    AppState.deferredInstall = e;
+    if (!localStorage.getItem('mbbs_install_dismissed')) {
+      $('install-banner')?.classList.remove('hidden');
+    }
+    syncInstallUI();
   });
+
+  $('btn-install')?.addEventListener('click', promptInstall);
 
   $('btn-install-dismiss')?.addEventListener('click', () => {
     $('install-banner')?.classList.add('hidden');
@@ -504,7 +575,30 @@ function initInstallBanner() {
   window.addEventListener('appinstalled', () => {
     $('install-banner')?.classList.add('hidden');
     AppState.deferredInstall = null;
+    syncInstallUI();
+    showToast('App added to home screen!', 'success');
   });
+
+  if (isIOSSafari() && !localStorage.getItem('mbbs_install_dismissed')) {
+    $('install-banner')?.classList.remove('hidden');
+  }
+}
+
+function initInstallApp() {
+  $('btn-install-settings')?.addEventListener('click', promptInstall);
+  syncInstallUI();
+}
+
+/** Unlock Web Audio on first user gesture (required by browsers). */
+function initAudioUnlock() {
+  const unlock = () => {
+    if (typeof TimerModule !== 'undefined' && TimerModule.unlockAudio) {
+      TimerModule.unlockAudio();
+    }
+  };
+  document.addEventListener('click', unlock, { passive: true });
+  document.addEventListener('touchstart', unlock, { passive: true });
+  document.addEventListener('keydown', unlock, { passive: true });
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -842,6 +936,15 @@ function initSettings() {
   // Sound preference
   $('pref-sound')?.addEventListener('change', (e) => {
     localStorage.setItem('mbbs_sound', e.target.checked ? '1' : '0');
+    if (e.target.checked && typeof TimerModule !== 'undefined' && TimerModule.playTestSound) {
+      TimerModule.playTestSound();
+    }
+  });
+
+  $('btn-test-sound')?.addEventListener('click', () => {
+    if (typeof TimerModule !== 'undefined' && TimerModule.playTestSound) {
+      TimerModule.playTestSound();
+    }
   });
 
   // Notifications preference
@@ -885,8 +988,9 @@ function initSettings() {
       'Reset EVERYTHING? All data (sessions, subjects, exams, syllabus) will be permanently deleted.',
       async () => {
         await DB.resetAll();
+        await DB.seedDefaultSubjects();
         localStorage.removeItem('mbbs_last_section');
-        showToast('All data reset.', 'success');
+        showToast('All data reset. Default subjects restored.', 'success');
         await populateAllSubjectSelects();
         navigateTo('dashboard');
       }

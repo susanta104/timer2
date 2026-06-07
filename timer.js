@@ -43,6 +43,7 @@ let _intervalHandle = null;
 let _startTimestamp = null;       // Date.now() when last started/resumed
 let _sessionStart   = null;       // Date.now() when the session began (first Start press)
 let _elapsedAtPause = 0;          // seconds elapsed before a pause
+let _audioCtx       = null;       // shared Web Audio context (reused across alerts)
 
 /* ────────────────────────────────────────────────────────────
    DOM REFERENCES (resolved once on init)
@@ -206,6 +207,7 @@ function _handleSkip() {
    TIMER LIFECYCLE
 ──────────────────────────────────────────────────────────── */
 function _startTimer() {
+  unlockAudio();
   _state          = STATE.RUNNING;
   _sessionStart   = _sessionStart || Date.now();
   _startTimestamp = Date.now();
@@ -365,51 +367,67 @@ function _setControlsEnabled(enabled) {
    SOUND  (Web Audio API — no external files needed)
 ──────────────────────────────────────────────────────────── */
 
+function _getAudioContext() {
+  if (_audioCtx) return _audioCtx;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  _audioCtx = new AudioCtx();
+  return _audioCtx;
+}
+
 /**
- * Play a three-tone completion chime using the Web Audio API.
- * Respects the user's sound preference from Settings.
+ * Resume audio context after a user gesture (browser autoplay policy).
  */
-function _playCompletionSound() {
-  const soundEnabled = localStorage.getItem('mbbs_sound') !== '0';
-  if (!soundEnabled) return;
+async function unlockAudio() {
+  try {
+    const ctx = _getAudioContext();
+    if (ctx && ctx.state === 'suspended') await ctx.resume();
+  } catch (_) {}
+}
+
+/**
+ * Play chime tones on the shared AudioContext.
+ * @param {boolean} [force=false]  ignore sound preference (for test button)
+ */
+async function _playChime(force = false) {
+  if (!force && localStorage.getItem('mbbs_sound') === '0') return;
 
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
+    const ctx = _getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') await ctx.resume();
 
-    const ctx = new AudioCtx();
-
-    // Three ascending tones
     const tones = [
-      { freq: 523.25, start: 0.00, dur: 0.18 }, // C5
-      { freq: 659.25, start: 0.20, dur: 0.18 }, // E5
-      { freq: 783.99, start: 0.40, dur: 0.35 }, // G5
+      { freq: 523.25, start: 0.00, dur: 0.18 },
+      { freq: 659.25, start: 0.20, dur: 0.18 },
+      { freq: 783.99, start: 0.40, dur: 0.35 },
     ];
 
+    const t0 = ctx.currentTime;
     tones.forEach(({ freq, start, dur }) => {
-      const osc   = ctx.createOscillator();
-      const gain  = ctx.createGain();
-
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-
-      osc.type      = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-
-      gain.gain.setValueAtTime(0, ctx.currentTime + start);
-      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + dur + 0.05);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t0 + start);
+      gain.gain.setValueAtTime(0.001, t0 + start);
+      gain.gain.exponentialRampToValueAtTime(0.35, t0 + start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + start + dur);
+      osc.start(t0 + start);
+      osc.stop(t0 + start + dur + 0.08);
     });
-
-    // Close the AudioContext after the last tone to free resources
-    setTimeout(() => ctx.close(), 1200);
-
   } catch (err) {
     console.warn('[Timer] Sound error:', err);
   }
+}
+
+function _playCompletionSound() {
+  _playChime(false);
+}
+
+function playTestSound() {
+  _playChime(true);
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -571,6 +589,8 @@ window.TimerModule = {
   init,
   refreshDailyStats,
   renderSubjectDonut,
+  unlockAudio,
+  playTestSound,
 
   // Exposed for testing / external access
   getState:     () => _state,

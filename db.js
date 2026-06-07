@@ -30,6 +30,13 @@ const STORE_EXAMS    = 'exams';
 const STORE_TOPICS   = 'topics';
 const STORE_SETTINGS = 'settings';
 
+/** Pre-loaded MBBS subjects (seeded on first launch only) */
+const DEFAULT_SUBJECTS = [
+  { name: 'Medicine', color: '#00d4ff', weeklyTarget: 10 },
+  { name: 'Surgery',  color: '#f87171', weeklyTarget: 10 },
+  { name: 'OBGYN',    color: '#f472b6', weeklyTarget: 10 },
+];
+
 /* ────────────────────────────────────────────────────────────
    INTERNAL STATE
 ──────────────────────────────────────────────────────────── */
@@ -841,12 +848,35 @@ function toDateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Seed default MBBS subjects on first launch (or after a full reset).
+ * Skips if any subjects already exist — never duplicates.
+ * @returns {Promise<number>} number of subjects added
+ */
+async function seedDefaultSubjects() {
+  const existing = await getAllSubjects();
+  if (existing.length > 0) return 0;
+
+  const now = Date.now();
+  for (let i = 0; i < DEFAULT_SUBJECTS.length; i++) {
+    const sub = DEFAULT_SUBJECTS[i];
+    await addSubject({
+      name:         sub.name,
+      color:        sub.color,
+      weeklyTarget: sub.weeklyTarget,
+      createdAt:    now + i,
+    });
+  }
+  return DEFAULT_SUBJECTS.length;
+}
+
 /* ────────────────────────────────────────────────────────────
    PUBLIC API
 ──────────────────────────────────────────────────────────── */
 window.DB = {
   /* Lifecycle */
   open,
+  seedDefaultSubjects,
 
   /* Sessions */
   addSession,

@@ -15,7 +15,7 @@
 /* ────────────────────────────────────────────────────────────
    CACHE NAMES — bump CACHE_VERSION to force full refresh
 ──────────────────────────────────────────────────────────── */
-const CACHE_VERSION   = 'v1.0.0';
+const CACHE_VERSION   = 'v1.1.0';
 const CACHE_SHELL     = `mbbs-shell-${CACHE_VERSION}`;
 const CACHE_FONTS     = `mbbs-fonts-${CACHE_VERSION}`;
 const CACHE_CDN       = `mbbs-cdn-${CACHE_VERSION}`;
@@ -48,7 +48,11 @@ const SHELL_ASSETS = [
   './icons/icon-512-maskable.png',
 ];
 
-/* CDN assets — cached on first use, then served cache-first */
+/* CDN assets — pre-cached on install for offline charts */
+const CDN_ASSETS = [
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js',
+];
+
 const CDN_ORIGINS = [
   'https://cdn.jsdelivr.net',
 ];
@@ -81,6 +85,16 @@ self.addEventListener('install', (event) => {
       if (failed > 0) {
         console.warn(`[SW] Install: ${failed} asset(s) could not be cached.`);
       }
+
+      // Pre-cache Chart.js for offline analytics
+      const cdnCache = await caches.open(CACHE_CDN);
+      await Promise.allSettled(
+        CDN_ASSETS.map(url =>
+          cdnCache.add(url).catch(err => {
+            console.warn(`[SW] Failed to pre-cache CDN: ${url}`, err);
+          })
+        )
+      );
 
       console.log(`[SW] Install complete — ${CACHE_SHELL}`);
 
